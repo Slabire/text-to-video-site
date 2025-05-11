@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Text to Video Generator</title>
+    <title>Text to Audio Generator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -28,7 +28,7 @@
         button:hover {
             background-color: #0056b3;
         }
-        video {
+        video, audio {
             margin-top: 30px;
             max-width: 100%;
             height: auto;
@@ -36,19 +36,19 @@
     </style>
 </head>
 <body>
-    <h1>Text to Video Generator</h1>
+    <h1>Text to Audio Generator</h1>
     <form action="/convert" method="POST">
-    <textarea name="text" placeholder="Enter your text here..." required></textarea><br>
-    <button type="submit">Generate Audio</button>
-</form>
+        <textarea name="text" placeholder="Enter your text here..." required></textarea><br>
+        <button type="submit">Generate Audio</button>
+    </form>
 
-
-    {% if video_url %}
-        <h2>Generated Video:</h2>
-        <video controls>
-            <source src="{{ video_url }}" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
+    {% if audio_path %}
+        <h2>Generated Audio:</h2>
+        <audio controls>
+            <source src="{{ audio_path }}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
     {% endif %}
 </body>
 </html>
+
