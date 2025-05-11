@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Text to Video Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background-color: #f9f9f9;
+            text-align: center;
+        }
+        textarea {
+            width: 90%;
+            height: 150px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            padding: 10px;
+        }
+        button {
+            padding: 10px 30px;
+            font-size: 18px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        video {
+            margin-top: 30px;
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Text to Video Generator</h1>
+    <form action="/generate-video" method="POST">
+        <textarea name="text" placeholder="Enter your script here..." required></textarea><br>
+        <button type="submit">Generate Video</button>
+    </form>
+
+    {% if video_path %}
+        <h2>Generated Video:</h2>
+        <video controls>
+            <source src="{{ video_path }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    {% endif %}
+</body>
+</html>
