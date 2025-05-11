@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Text to Video</title>
+</head>
+<body>
+    <h2>Enter Your Script</h2>
+    <form action="/generate" method="post">
+        <textarea name="script" rows="10" cols="50"></textarea><br>
+        <button type="submit">Generate Video</button>
+    </form>
+
+    {% if video_url %}
+    <h3>Your Video:</h3>
+    <video controls width="600">
+        <source src="{{ video_url }}" type="video/mp4">
+    </video>
+    <a href="{{ video_url }}" download>Download Video</a>
+    {% endif %}
+</body>
+</html>
