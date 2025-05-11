@@ -55,27 +55,58 @@ def generate_video():
     audio_path = 'static/temp.mp3'
     video_path = 'static/result.mp4'
 
-    from gtts import gTTS
-    from moviepy.editor import ColorClip, AudioFileClip
-
     # Generează audio din text
     tts = gTTS(text=text, lang='en')
     tts.save(audio_path)
 
-    # Creează video simplu alb cu audio
+    # Căutăm imagini relevante pe Pexels
+    search_query = "video generation"  # Căutăm imagini despre generarea de video
+    api.search(search_query, page=1, results_per_page=5)
+
+    # Creăm folder pentru imagini, dacă nu există
+    if not os.path.exists("images"):
+        os.makedirs("images")
+
+    # Descărcăm imagini de la Pexels
+    for photo in api.get_entries():
+        image_url = photo.original
+        image_name = photo.id + ".jpg"
+        img_data = requests.get(image_url).content
+        with open(f"images/{image_name}", 'wb') as handler:
+            handler.write(img_data)
+
+    # Creează videoclipul folosind imagini și audio
     audioclip = AudioFileClip(audio_path)
+    clips = []
+
+    # Adăugăm un clip cu text
+    text_clip = TextClip(text, fontsize=30, color='white', bg_color='black', size=(1280, 720))
+    text_clip = text_clip.set_duration(3)  # Durata textului pe ecran
+    clips.append(text_clip)
+
+    # Adăugăm imagini ca clipuri
+    for image_name in os.listdir("images"):
+        img_path = f"images/{image_name}"
+        clip = ImageClip(img_path)
+        clip = clip.set_duration(3)  # Durata fiecărei imagini
+        clips.append(clip)
+
+    # Creăm un videoclip simplu alb cu audio și imagini
     videoclip = ColorClip(size=(1280, 720), color=(255, 255, 255), duration=audioclip.duration)
     videoclip = videoclip.set_audio(audioclip)
-    videoclip.write_videofile(video_path, fps=24)
-    # verifici dacă fișierul există fizic
+
+    # Adăugăm clipurile (text + imagini) la videoclip
+    final_clip = concatenate_videoclips(clips + [videoclip], method="compose")
+
+    # Salvăm videoclipul final
+    final_clip.write_videofile(video_path, fps=24)
+
+    # Verificăm dacă fișierul există
     print("Există result.mp4?", os.path.exists(video_path))
 
     return render_template('video.html', video_path=video_path)
 
-
-
-
-
-        
-       
-
+# ATENȚIE: indentarea corectă
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
