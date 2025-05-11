@@ -67,6 +67,8 @@ def generate_video():
     videoclip = ColorClip(size=(1280, 720), color=(255, 255, 255), duration=audioclip.duration)
     videoclip = videoclip.set_audio(audioclip)
     videoclip.write_videofile(video_path, fps=24)
+    # verifici dacă fișierul există fizic
+    print("Există result.mp4?", os.path.exists(video_path))
 
     return render_template('video.html', video_path=video_path)
 
