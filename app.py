@@ -1,53 +1,49 @@
-from flask import Flask, request, render_template
-from gtts import gTTS
-from moviepy.editor import *
 import os
-import uuid
-from PIL import Image
-Image.ANTIALIAS = Image.Resampling.LANCZOS
+import nltk
+from flask import Flask, render_template, request
+from gtts import gTTS
+from moviepy.editor import AudioFileClip
 
+# Setează locația de descărcare pentru fișierele NLTK
+nltk_data_path = os.path.join(os.getcwd(), 'nltk_data')
+if not os.path.exists(nltk_data_path):
+    os.makedirs(nltk_data_path)
+
+# Adaugă calea la fișierele NLTK
+nltk.data.path.append(nltk_data_path)
+
+# Descarcă 'punkt' dacă nu este deja disponibil
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt', download_dir=nltk_data_path)
+
+# Inițializează aplicația Flask
 app = Flask(__name__)
 
-@app.route('/', methods=['GET'])
-def index():
+@app.route('/')
+def home():
     return render_template('index.html')
 
-@app.route('/generate', methods=['POST'])
-def generate_video():
-    try:
-        # Preia textul din formular
-        text = request.form['script']
-        
-        # Creează un nume unic pentru fișierele generate
-        filename = str(uuid.uuid4())
-        audio_path = f'static/{filename}.mp3'
-        video_path = f'static/{filename}.mp4'
-        image_path = 'static/background.jpg'
+@app.route('/convert', methods=['POST'])
+def convert_text_to_audio():
+    if request.method == 'POST':
+        text = request.form['text']  # Obține textul din formular
+        language = request.form.get('language', 'en')  # Obține limba aleasă
 
-        # Verifică dacă imaginea există
-        if not os.path.exists(image_path):
-            raise FileNotFoundError(f"Image file {image_path} not found.")
-        
-        # Generează audio din text
-        tts = gTTS(text)
+        # Folosește gTTS pentru a crea audio din text
+        tts = gTTS(text=text, lang=language, slow=False)
+
+        # Salvează fișierul audio temporar
+        audio_path = 'static/audio.mp3'
         tts.save(audio_path)
 
-        # Creează videoclipul din imagine și audio
-        audioclip = AudioFileClip(audio_path)
-        imageclip = ImageClip(image_path).set_duration(audioclip.duration).set_audio(audioclip)
-        video = imageclip.resize(height=720)
-        video.write_videofile(video_path, fps=24)
-
-        # Returnează video-ul generat în pagina HTML
-        return render_template('index.html', video_url=video_path)
-    
-    except Exception as e:
-        # Afișează eroarea în loguri și returnează un mesaj de eroare
-        print(f"Error: {e}")
-        return f"Error: {str(e)}", 500
+        # Returnează audio-ul ca răspuns
+        return render_template('index.html', audio_path=audio_path)
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
         
        
