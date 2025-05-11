@@ -37,10 +37,11 @@
 </head>
 <body>
     <h1>Text to Video Generator</h1>
-    <form action="/generate" method="POST">
-        <textarea name="script" placeholder="Enter your text here..." required></textarea><br>
-        <button type="submit">Generate Video</button>
-    </form>
+    <form action="/convert" method="POST">
+    <textarea name="text" placeholder="Enter your text here..." required></textarea><br>
+    <button type="submit">Generate Audio</button>
+</form>
+
 
     {% if video_url %}
         <h2>Generated Video:</h2>
