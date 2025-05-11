@@ -2,6 +2,9 @@ import os
 import nltk
 from flask import Flask, render_template, request
 from gtts import gTTS
+from moviepy.editor import AudioFileClip, ImageClip, TextClip, concatenate_videoclips, ColorClip
+import requests
+from pexels_api import API
 
 # Setează locația de descărcare pentru fișierele NLTK
 nltk_data_path = os.path.join(os.getcwd(), 'nltk_data')
@@ -19,6 +22,10 @@ except LookupError:
 
 # Inițializează aplicația Flask
 app = Flask(__name__)
+
+# Configurare Pexels API
+pexels_api_key = "API_KEY"  # Adaugă cheia ta de API de la Pexels
+api = API(pexels_api_key)
 
 @app.route('/')
 def home():
@@ -39,11 +46,6 @@ def convert_text_to_audio():
 
         # Returnează pagina cu player audio
         return render_template('index.html', audio_path=audio_path)
-
-# ✅ ATENȚIE: indentarea corectă
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
 
 @app.route('/video')
 def video_page():
@@ -106,7 +108,6 @@ def generate_video():
 
     return render_template('video.html', video_path=video_path)
 
-# ATENȚIE: indentarea corectă
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
