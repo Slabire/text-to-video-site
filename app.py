@@ -2,7 +2,6 @@ import os
 import nltk
 from flask import Flask, render_template, request
 from gtts import gTTS
-from moviepy.editor import AudioFileClip
 
 # Setează locația de descărcare pentru fișierele NLTK
 nltk_data_path = os.path.join(os.getcwd(), 'nltk_data')
@@ -29,20 +28,21 @@ def home():
 def convert_text_to_audio():
     if request.method == 'POST':
         text = request.form['text']  # Obține textul din formular
-        language = request.form.get('language', 'en')  # Obține limba aleasă
+        language = request.form.get('language', 'en')  # Implicit engleză
 
-        # Folosește gTTS pentru a crea audio din text
+        # Creează audio cu gTTS
         tts = gTTS(text=text, lang=language, slow=False)
 
-        # Salvează fișierul audio temporar
-        audio_path = 'static/audio.mp3'
+        # Salvează fișierul audio
+        audio_path = os.path.join('static', 'audio.mp3')
         tts.save(audio_path)
 
-        # Returnează audio-ul ca răspuns
+        # Returnează pagina cu player audio
         return render_template('index.html', audio_path=audio_path)
 
+# ✅ ATENȚIE: indentarea corectă
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))  # Correct indentation here
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
 
 
