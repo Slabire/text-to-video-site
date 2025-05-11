@@ -45,6 +45,30 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
 
+@app.route('/video')
+def video_page():
+    return render_template('video.html')
+
+@app.route('/generate-video', methods=['POST'])
+def generate_video():
+    text = request.form['text']
+    audio_path = 'static/temp.mp3'
+    video_path = 'static/result.mp4'
+
+    from gtts import gTTS
+    from moviepy.editor import ColorClip, AudioFileClip
+
+    # Generează audio din text
+    tts = gTTS(text=text, lang='en')
+    tts.save(audio_path)
+
+    # Creează video simplu alb cu audio
+    audioclip = AudioFileClip(audio_path)
+    videoclip = ColorClip(size=(1280, 720), color=(255, 255, 255), duration=audioclip.duration)
+    videoclip = videoclip.set_audio(audioclip)
+    videoclip.write_videofile(video_path, fps=24)
+
+    return render_template('video.html', video_path=video_path)
 
 
 
