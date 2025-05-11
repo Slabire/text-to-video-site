@@ -1,51 +1,84 @@
-from flask import Flask, request, render_template, send_from_directory
-from gtts import gTTS
-from moviepy.editor import ImageClip, AudioFileClip
 import os
-import requests
-import uuid
+import nltk
+from flask import Flask, render_template, request
+from gtts import gTTS
 
+# Setează locația de descărcare pentru fișierele NLTK
+nltk_data_path = os.path.join(os.getcwd(), 'nltk_data')
+if not os.path.exists(nltk_data_path):
+    os.makedirs(nltk_data_path)
+
+# Adaugă calea la fișierele NLTK
+nltk.data.path.append(nltk_data_path)
+
+# Descarcă 'punkt' dacă nu este deja disponibil
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt', download_dir=nltk_data_path)
+
+# Inițializează aplicația Flask
 app = Flask(__name__)
-
-PEXELS_API_KEY = "x5CFAga01HCx7vWoy8URSRy8qucwHAoFFFv7JgTS2d6Kh2XPhS4PIIoG"
-HEADERS = {"Authorization": PEXELS_API_KEY}
 
 @app.route('/')
 def home():
+    return render_template('index.html')
+
+@app.route('/convert', methods=['POST'])
+def convert_text_to_audio():
+    if request.method == 'POST':
+        text = request.form['text']  # Obține textul din formular
+        language = request.form.get('language', 'en')  # Implicit engleză
+
+        # Creează audio cu gTTS
+        tts = gTTS(text=text, lang=language, slow=False)
+
+        # Salvează fișierul audio
+        audio_path = os.path.join('static', 'audio.mp3')
+        tts.save(audio_path)
+
+        # Returnează pagina cu player audio
+        return render_template('index.html', audio_path=audio_path)
+
+# ✅ ATENȚIE: indentarea corectă
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+
+@app.route('/video')
+def video_page():
     return render_template('video.html')
 
 @app.route('/generate-video', methods=['POST'])
 def generate_video():
     text = request.form['text']
-    unique_id = str(uuid.uuid4())
-    audio_path = f"static/audio_{unique_id}.mp3"
-    image_path = f"static/image_{unique_id}.jpg"
-    video_path = f"static/video_{unique_id}.mp4"
+    audio_path = 'static/temp.mp3'
+    video_path = 'static/result.mp4'
 
-    # 1. Generează audio cu gTTS
-    tts = gTTS(text)
+    from gtts import gTTS
+    from moviepy.editor import ColorClip, AudioFileClip
+
+    # Generează audio din text
+    tts = gTTS(text=text, lang='en')
     tts.save(audio_path)
 
-    # 2. Ia o imagine de pe Pexels
-    r = requests.get("https://api.pexels.com/v1/search?query=nature&per_page=1", headers=HEADERS)
-    img_url = r.json()['photos'][0]['src']['large']
-    img_data = requests.get(img_url).content
-    with open(image_path, 'wb') as f:
-        f.write(img_data)
-
-    # 3. Creează videoclipul
+    # Creează video simplu alb cu audio
     audioclip = AudioFileClip(audio_path)
-    imageclip = ImageClip(image_path, duration=audioclip.duration).set_audio(audioclip)
-    imageclip.write_videofile(video_path, fps=24)
+    videoclip = ColorClip(size=(1280, 720), color=(255, 255, 255), duration=audioclip.duration)
+    videoclip = videoclip.set_audio(audioclip)
+    videoclip.write_videofile(video_path, fps=24)
+    # verifici dacă fișierul există fizic
+    print("Există result.mp4?", os.path.exists(video_path))
 
-    return render_template("video.html", video_path=video_path)
+    return render_template('video.html', video_path=video_path)
 
-@app.route('/static/<path:filename>')
-def serve_static(filename):
-    return send_from_directory('static', filename)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
+
+
+        
+       
+
 
 
 
