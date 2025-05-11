@@ -1,13 +1,8 @@
 from flask import Flask, request, render_template
 from gtts import gTTS
 from moviepy.editor import *
-from nltk.tokenize import sent_tokenize
-import nltk
 import os
 import uuid
-
-# Descarcă datele necesare pentru nltk
-nltk.download('punkt')
 
 app = Flask(__name__)
 
@@ -17,33 +12,38 @@ def index():
 
 @app.route('/generate', methods=['POST'])
 def generate_video():
-    text = request.form['script']
-    filename = str(uuid.uuid4())
-    video_path = f'static/{filename}.mp4'
+    try:
+        # Preia textul din formular
+        text = request.form['script']
+        
+        # Creează un nume unic pentru fișierele generate
+        filename = str(uuid.uuid4())
+        audio_path = f'static/{filename}.mp3'
+        video_path = f'static/{filename}.mp4'
+        image_path = 'static/background.jpg'
 
-    sentences = sent_tokenize(text)
+        # Verifică dacă imaginea există
+        if not os.path.exists(image_path):
+            raise FileNotFoundError(f"Image file {image_path} not found.")
+        
+        # Generează audio din text
+        tts = gTTS(text)
+        tts.save(audio_path)
 
-    clips = []
-    image_folder = 'static/images'
-    image_files = sorted([f for f in os.listdir(image_folder) if f.endswith(('.jpg', '.png'))])
-    total_images = len(image_files)
-
-    for i, sentence in enumerate(sentences):
-        # Generează audio
-        audio_path = f'static/{filename}_audio_{i}.mp3'
-        gTTS(sentence).save(audio_path)
-
-        # Creează clip video pentru propoziție
+        # Creează videoclipul din imagine și audio
         audioclip = AudioFileClip(audio_path)
-        image_path = os.path.join(image_folder, image_files[i % total_images])
         imageclip = ImageClip(image_path).set_duration(audioclip.duration).set_audio(audioclip)
-        imageclip = imageclip.resize(height=720)
-        clips.append(imageclip)
+        video = imageclip.resize(height=720)
+        video.write_videofile(video_path, fps=24)
 
-    final_video = concatenate_videoclips(clips, method="compose")
-    final_video.write_videofile(video_path, fps=24)
-
-    return render_template('index.html', video_url=video_path)
+        # Returnează video-ul generat în pagina HTML
+        return render_template('index.html', video_url=video_path)
+    
+    except Exception as e:
+        # Afișează eroarea în loguri și returnează un mesaj de eroare
+        print(f"Error: {e}")
+        return f"Error: {str(e)}", 500
 
 if __name__ == '__main__':
     app.run(debug=True)
+
