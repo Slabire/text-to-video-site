@@ -1,3 +1,6 @@
 Flask
 gTTS
 moviepy
+python-dotenv
+gunicorn
+
