@@ -1,21 +1,53 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Text to Video</title>
+    <meta charset="UTF-8">
+    <title>Text to Video Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background-color: #f0f0f5;
+            text-align: center;
+        }
+        textarea {
+            width: 90%;
+            height: 150px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            padding: 10px;
+        }
+        button {
+            padding: 10px 30px;
+            font-size: 18px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        video {
+            margin-top: 30px;
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
-    <h2>Enter Your Script</h2>
-    <form action="/generate" method="post">
-        <textarea name="script" rows="10" cols="50"></textarea><br>
+    <h1>Text to Video Generator</h1>
+    <form action="/generate" method="POST">
+        <textarea name="script" placeholder="Enter your text here..." required></textarea><br>
         <button type="submit">Generate Video</button>
     </form>
 
     {% if video_url %}
-    <h3>Your Video:</h3>
-    <video controls width="600">
-        <source src="{{ video_url }}" type="video/mp4">
-    </video>
-    <a href="{{ video_url }}" download>Download Video</a>
+        <h2>Generated Video:</h2>
+        <video controls>
+            <source src="{{ video_url }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
     {% endif %}
 </body>
 </html>
