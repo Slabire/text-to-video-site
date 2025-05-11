@@ -2,6 +2,7 @@ Flask
 gTTS
 Pillow==9.5.0
 moviepy==1.0.3
+pexels-api==1.0.0
 python-dotenv
 gunicorn
 nltk
