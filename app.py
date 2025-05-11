@@ -1,55 +1,17 @@
 import os
-import nltk
-from flask import Flask, render_template, request
+import requests
 from gtts import gTTS
 from moviepy.editor import AudioFileClip, ImageClip, TextClip, concatenate_videoclips, ColorClip
-import requests
-from pexels_api import API
+from flask import Flask, render_template, request
 
-# Setează locația de descărcare pentru fișierele NLTK
-nltk_data_path = os.path.join(os.getcwd(), 'nltk_data')
-if not os.path.exists(nltk_data_path):
-    os.makedirs(nltk_data_path)
+# Your Pexels API Key
+api_key = 'x5CFAga01HCx7vWoy8URSRy8qucwHAoFFFv7JgTS2d6Kh2XPhS4PIIoG'
 
-# Adaugă calea la fișierele NLTK
-nltk.data.path.append(nltk_data_path)
+# Set the Pexels API URL
+url = "https://api.pexels.com/v1/search"
 
-# Descarcă 'punkt' dacă nu este deja disponibil
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt', download_dir=nltk_data_path)
-
-# Inițializează aplicația Flask
+# Initialize Flask app
 app = Flask(__name__)
-
-# Configurare Pexels API
-pexels_api_key = "API_KEY"  # Adaugă cheia ta de API de la Pexels
-api = API(pexels_api_key)
-
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-@app.route('/convert', methods=['POST'])
-def convert_text_to_audio():
-    if request.method == 'POST':
-        text = request.form['text']  # Obține textul din formular
-        language = request.form.get('language', 'en')  # Implicit engleză
-
-        # Creează audio cu gTTS
-        tts = gTTS(text=text, lang=language, slow=False)
-
-        # Salvează fișierul audio
-        audio_path = os.path.join('static', 'audio.mp3')
-        tts.save(audio_path)
-
-        # Returnează pagina cu player audio
-        return render_template('index.html', audio_path=audio_path)
-
-@app.route('/video')
-def video_page():
-    return render_template('video.html')
 
 @app.route('/generate-video', methods=['POST'])
 def generate_video():
@@ -57,57 +19,76 @@ def generate_video():
     audio_path = 'static/temp.mp3'
     video_path = 'static/result.mp4'
 
-    # Generează audio din text
+    # Generate audio from text
     tts = gTTS(text=text, lang='en')
     tts.save(audio_path)
 
-    # Căutăm imagini relevante pe Pexels
-    search_query = "video generation"  # Căutăm imagini despre generarea de video
-    api.search(search_query, page=1, results_per_page=5)
+    # Set headers for the Pexels API request
+    headers = {
+        "Authorization": api_key
+    }
 
-    # Creăm folder pentru imagini, dacă nu există
-    if not os.path.exists("images"):
-        os.makedirs("images")
+    # Search query for Pexels (you can modify this)
+    search_query = "video generation"
 
-    # Descărcăm imagini de la Pexels
-    for photo in api.get_entries():
-        image_url = photo.original
-        image_name = photo.id + ".jpg"
-        img_data = requests.get(image_url).content
-        with open(f"images/{image_name}", 'wb') as handler:
-            handler.write(img_data)
+    # Set the parameters for the search
+    params = {
+        "query": search_query,
+        "per_page": 5,  # Number of results per page
+        "page": 1       # Page number to retrieve
+    }
 
-    # Creează videoclipul folosind imagini și audio
-    audioclip = AudioFileClip(audio_path)
-    clips = []
+    # Make a GET request to the Pexels API
+    response = requests.get(url, headers=headers, params=params)
 
-    # Adăugăm un clip cu text
-    text_clip = TextClip(text, fontsize=30, color='white', bg_color='black', size=(1280, 720))
-    text_clip = text_clip.set_duration(3)  # Durata textului pe ecran
-    clips.append(text_clip)
+    # Check if the request was successful
+    if response.status_code == 200:
+        data = response.json()
+        photos = data.get('photos', [])
 
-    # Adăugăm imagini ca clipuri
-    for image_name in os.listdir("images"):
-        img_path = f"images/{image_name}"
-        clip = ImageClip(img_path)
-        clip = clip.set_duration(3)  # Durata fiecărei imagini
-        clips.append(clip)
+        # Create folder for images if it doesn't exist
+        if not os.path.exists("images"):
+            os.makedirs("images")
 
-    # Creăm un videoclip simplu alb cu audio și imagini
-    videoclip = ColorClip(size=(1280, 720), color=(255, 255, 255), duration=audioclip.duration)
-    videoclip = videoclip.set_audio(audioclip)
+        # Download images from Pexels and save locally
+        for photo in photos:
+            image_url = photo['src']['original']
+            image_name = f"{photo['id']}.jpg"
+            img_data = requests.get(image_url).content
+            with open(f"images/{image_name}", 'wb') as handler:
+                handler.write(img_data)
 
-    # Adăugăm clipurile (text + imagini) la videoclip
-    final_clip = concatenate_videoclips(clips + [videoclip], method="compose")
+        # Create video using images and audio
+        audioclip = AudioFileClip(audio_path)
+        clips = []
 
-    # Salvăm videoclipul final
-    final_clip.write_videofile(video_path, fps=24)
+        # Add a text clip
+        text_clip = TextClip(text, fontsize=30, color='white', bg_color='black', size=(1280, 720))
+        text_clip = text_clip.set_duration(3)  # Duration of the text
+        clips.append(text_clip)
 
-    # Verificăm dacă fișierul există
-    print("Există result.mp4?", os.path.exists(video_path))
+        # Add images as clips
+        for image_name in os.listdir("images"):
+            img_path = f"images/{image_name}"
+            clip = ImageClip(img_path)
+            clip = clip.set_duration(3)  # Duration of each image
+            clips.append(clip)
 
-    return render_template('video.html', video_path=video_path)
+        # Create a base white video clip with audio
+        videoclip = ColorClip(size=(1280, 720), color=(255, 255, 255), duration=audioclip.duration)
+        videoclip = videoclip.set_audio(audioclip)
+
+        # Combine the video clips (text + images) with the white background video
+        final_clip = concatenate_videoclips(clips + [videoclip], method="compose")
+
+        # Save the final video
+        final_clip.write_videofile(video_path, fps=24)
+
+        # Return the video to the user
+        return render_template('video.html', video_path=video_path)
+    else:
+        return "Error fetching images from Pexels", 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)
+
