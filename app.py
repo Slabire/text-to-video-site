@@ -1,8 +1,13 @@
-from flask import Flask, request, render_template, url_for
+from flask import Flask, request, render_template
 from gtts import gTTS
 from moviepy.editor import *
+from nltk.tokenize import sent_tokenize
+import nltk
 import os
 import uuid
+
+# Descarcă datele necesare pentru nltk
+nltk.download('punkt')
 
 app = Flask(__name__)
 
@@ -14,24 +19,31 @@ def index():
 def generate_video():
     text = request.form['script']
     filename = str(uuid.uuid4())
-    audio_path = os.path.join('static', f'{filename}.mp3')
-    video_path = os.path.join('static', f'{filename}.mp4')
-    image_path = 'static/background.jpg'
+    video_path = f'static/{filename}.mp4'
 
-    # Generate audio
-    tts = gTTS(text)
-    tts.save(audio_path)
+    sentences = sent_tokenize(text)
 
-    # Create video
-    audioclip = AudioFileClip(audio_path)
-    imageclip = ImageClip(image_path).set_duration(audioclip.duration).set_audio(audioclip)
-    video = imageclip.resize(height=720)
-    video.write_videofile(video_path, fps=24)
+    clips = []
+    image_folder = 'static/images'
+    image_files = sorted([f for f in os.listdir(image_folder) if f.endswith(('.jpg', '.png'))])
+    total_images = len(image_files)
 
-    # Use url_for to get the correct URL for the video file
-    video_url = url_for('static', filename=f'{filename}.mp4')
+    for i, sentence in enumerate(sentences):
+        # Generează audio
+        audio_path = f'static/{filename}_audio_{i}.mp3'
+        gTTS(sentence).save(audio_path)
 
-    return render_template('index.html', video_url=video_url)
+        # Creează clip video pentru propoziție
+        audioclip = AudioFileClip(audio_path)
+        image_path = os.path.join(image_folder, image_files[i % total_images])
+        imageclip = ImageClip(image_path).set_duration(audioclip.duration).set_audio(audioclip)
+        imageclip = imageclip.resize(height=720)
+        clips.append(imageclip)
+
+    final_video = concatenate_videoclips(clips, method="compose")
+    final_video.write_videofile(video_path, fps=24)
+
+    return render_template('index.html', video_url=video_path)
 
 if __name__ == '__main__':
     app.run(debug=True)
