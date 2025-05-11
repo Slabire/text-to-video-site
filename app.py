@@ -3,6 +3,8 @@ from gtts import gTTS
 from moviepy.editor import *
 import os
 import uuid
+from PIL import Image
+Image.ANTIALIAS = Image.Resampling.LANCZOS
 
 app = Flask(__name__)
 
